@@ -1,32 +1,145 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Guess the Number</title>
+  <title>Jogo da Cobrinha - Ryan</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Guess the Number Game</h1>
-  <p>Try to guess the secret number between 1 and 100.</p>
-  <input type="number" id="guess" placeholder="Enter your guess">
-  <button onclick="checkGuess()">Check</button>
-  <p id="message"></p>
+  <h1>Jogo da Cobrinha</h1>
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
 
   <script>
-    // Gerar um número aleatório entre 1 e 100
-    const secretNumber = Math.floor(Math.random() * 100) + 1;
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-    function checkGuess() {
-      // Obter o valor digitado pelo usuário
-      const guess = parseInt(document.getElementById("guess").value);
+    const box = 20;
 
-      // Verificar se o palpite está correto
-      if (guess === secretNumber) {
-        document.getElementById("message").textContent = "Parabéns! Você acertou o número secreto!";
-      } else if (guess < secretNumber) {
-        document.getElementById("message").textContent = "Tente novamente. O número secreto é maior.";
-      } else {
-        document.getElementById("message").textContent = "Tente novamente. O número secreto é menor.";
+    const snake = {
+      x: 10 * box,
+      y: 10 * box,
+      dx: box,
+      dy: 0,
+      cells: [],
+      maxCells: 1,
+    };
+
+    const apple = {
+      x: 0,
+      y: 0,
+    };
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      snake.x += snake.dx;
+      snake.y += snake.dy;
+
+      if (snake.x < 0) snake.x = canvas.width - box;
+      if (snake.y < 0) snake.y = canvas.height - box;
+      if (snake.x >= canvas.width) snake.x = 0;
+      if (snake.y >= canvas.height) snake.y = 0;
+
+      snake.cells.unshift({ x: snake.x, y: snake.y });
+
+      if (snake.cells.length > snake.maxCells) {
+        snake.cells.pop();
+      }
+
+      ctx.fillStyle = "green";
+      snake.cells.forEach((cell, index) => {
+        ctx.fillRect(cell.x, cell.y, box, box);
+        if (cell.x === snake.x && cell.y === snake.y && index > 0) {
+          snake.cells = [{ x: 10 * box, y: 10 * box }];
+          snake.maxCells = 1;
+          snake.dx = box;
+          snake.dy = 0;
+        }
+      });
+
+      ctx.fillStyle = "red";
+      ctx.fillRect(apple.x, apple.y, box, box);
+    }
+
+    function updateApplePosition() {
+      apple.x = getRandomInt(0, canvas.width / box) * box;
+      apple.y = getRandomInt(0, canvas.height / box) * box;
+    }
+
+    function eatApple() {
+      if (snake.x === apple.x && snake.y === apple.y) {
+        snake.maxCells++;
+        updateApplePosition();
       }
     }
+
+    updateApplePosition();
+
+    document.addEventListener("keydown", (event) => {
+      const key = event.key;
+      if (key === "ArrowLeft" && snake.dx === 0) {
+        snake.dx = -box;
+        snake.dy = 0;
+      } else if (key === "ArrowRight" && snake.dx === 0) {
+        snake.dx = box;
+        snake.dy = 0;
+      } else if (key === "ArrowUp" && snake.dy === 0) {
+        snake.dy = -box;
+        snake.dx = 0;
+      } else if (key === "ArrowDown" && snake.dy === 0) {
+        snake.dy = box;
+        snake.dx = 0;
+      }
+    });
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    document.addEventListener("touchstart", (event) => {
+      touchStartX = event.touches[0].clientX;
+      touchStartY = event.touches[0].clientY;
+    });
+
+    document.addEventListener("touchmove", (event) => {
+      const touchEndX = event.touches[0].clientX;
+      const touchEndY = event.touches[0].clientY;
+
+      const dx = touchEndX - touchStartX;
+      const dy = touchEndY - touchStartY;
+
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0 && snake.dx === 0) {
+          snake.dx = box;
+          snake.dy = 0;
+        } else if (dx < 0 && snake.dx === 0) {
+          snake.dx = -box;
+          snake.dy = 0;
+        }
+      } else {
+        if (dy > 0 && snake.dy === 0) {
+          snake.dy = box;
+          snake.dx = 0;
+        } else if (dy < 0 && snake.dy === 0) {
+          snake.dy = -box;
+          snake.dx = 0;
+        }
+      }
+
+      touchStartX = touchEndX;
+      touchStartY = touchEndY;
+    });
+
+    function gameLoop() {
+      draw();
+      eatApple();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
   </script>
 </body>
 </html>
+
